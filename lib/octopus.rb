@@ -61,6 +61,13 @@ module Octopus
     ActiveRecord::Base.connection.initialize_shards(@config)
   end
   
+  def self.set(shard)
+    ActiveRecord::Base.hijack_initializer()
+    conn = ActiveRecord::Base.connection
+    conn.current_shard = shard
+    conn.block = true
+  end  
+  
   def self.using(shard, &block)
     ActiveRecord::Base.hijack_initializer()
     conn = ActiveRecord::Base.connection
