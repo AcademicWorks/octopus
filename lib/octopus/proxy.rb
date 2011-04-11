@@ -87,6 +87,10 @@ class Octopus::Proxy
     current_shard.is_a?(Array) ? current_shard.first : current_shard
   end
   
+  def shards
+    @shards.keys - [:master]
+  end
+  
   def run_queries_on_shard(shard, &block)
     older_shard = self.current_shard
     last_block = self.block
