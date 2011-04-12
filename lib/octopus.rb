@@ -56,19 +56,19 @@ module Octopus
   end
   
   def self.connection_configurations
-    connections = []
-    environments.map.each do |env|
+    environments.inject({}) do |hash, env|
+      hash[env] = []
       config[env].each do |key, value|
         if value.has_key?("adapter")
-          connections << value
+          hash[env] << value
         else
           value.each do |k, v|
-            connections << v
+            hash[env] << v
           end
         end
       end
+      hash
     end
-    connections
   end
   
   def self.shards=(shards)
