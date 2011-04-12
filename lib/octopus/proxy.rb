@@ -88,7 +88,7 @@ class Octopus::Proxy
   end
   
   def shards
-    @shards.keys - [:master]
+    @shards.keys
   end
   
   def run_queries_on_shard(shard, &block)
