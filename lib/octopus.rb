@@ -55,6 +55,22 @@ module Octopus
     defined?(Rails) 
   end
   
+  def self.connection_configurations
+    connections = []
+    environments.map.each do |env|
+      config[env].each do |key, value|
+        if value.has_key?("adapter")
+          connections << value
+        else
+          value.each do |k, v|
+            connections << v
+          end
+        end
+      end
+    end
+    connections
+  end
+  
   def self.shards=(shards)
     @config ||= HashWithIndifferentAccess.new
     @config[rails_env()] = HashWithIndifferentAccess.new(shards)
@@ -83,6 +99,7 @@ end
 
 require "octopus/model"
 require "octopus/migration"
+require "octopus/migrator"
 require "octopus/association_collection"
 require "octopus/has_and_belongs_to_many_association"
 require "octopus/association"
