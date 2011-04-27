@@ -9,7 +9,12 @@ module Octopus::Migrator
   def migrate_with_octopus(migrations_path, target_version = nil)
     conn = ActiveRecord::Base.connection
     return migrate_without_octopus(migrations_path, target_version = nil) unless conn.is_a?(Octopus::Proxy)
-    ActiveRecord::Migration.connection().current_shard = ActiveRecord::Base.connection.shards
+    if ENV['SHARDS']
+      ActiveRecord::Migration.connection().current_shard = ENV['SHARDS'].split(",").map{|shard| shard.strip.to_sym}
+    else
+      ActiveRecord::Migration.connection().current_shard = ActiveRecord::Base.connection.shards
+    end
+    
     
     groups = conn.instance_variable_get(:@groups)
     
