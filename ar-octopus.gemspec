@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
      "TODO.txt",
      "ar-octopus.gemspec",
      "init.rb",
+     "lib/ar-octopus.rb",
      "lib/octopus.rb",
      "lib/octopus/association.rb",
      "lib/octopus/association_collection.rb",
