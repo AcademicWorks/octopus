@@ -21,7 +21,7 @@ end
 
 #This class sets its own connection
 class CustomConnection < ActiveRecord::Base
-  octopus_establish_connection(:adapter => "mysql", :database => "octopus_shard2", :username => "root", :password => "")
+  octopus_establish_connection(:adapter => "mysql2", :database => "octopus_shard2", :username => "root", :password => "")
 end
 
 #This items belongs to a client
@@ -58,7 +58,7 @@ class Assignment < ActiveRecord::Base
 end
 
 class Programmer < ActiveRecord::Base
-  has_many :assignments 
+  has_many :assignments
   has_many :projects, :through => :assignments
 end
 
@@ -69,4 +69,9 @@ end
 
 class Comment < ActiveRecord::Base
   belongs_to :commentable, :polymorphic => true
+end
+
+
+class Bacon < ActiveRecord::Base
+  octopus_set_table_name "yummy"
 end

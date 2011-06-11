@@ -7,7 +7,8 @@ module Octopus::Model
 
   module SharedMethods
     def clean_table_name
-      if self != ActiveRecord::Base && self.respond_to?(:reset_table_name)
+      return unless self.connection_proxy.should_clean_table_name?
+      if self != ActiveRecord::Base && self.respond_to?(:reset_table_name) && !self.read_inheritable_attribute(:set_table_name)
         self.reset_table_name() 
       end
 
@@ -20,8 +21,8 @@ module Octopus::Model
     def using(shard)
       return self if defined?(::Rails) && !Octopus.environments.include?(Rails.env.to_s)
       
-      clean_table_name()
       hijack_initializer() if !respond_to?(:set_current_shard)
+      clean_table_name()
 
       self.connection_proxy.using_enabled = true
 
@@ -30,7 +31,6 @@ module Octopus::Model
 
     def hijack_initializer()
       attr_accessor :current_shard
-      after_initialize :set_current_shard
       before_save :reload_connection
 
       def set_current_shard
@@ -41,7 +41,9 @@ module Octopus::Model
         end
       end
 
-      if !Octopus.rails3?
+      if Octopus.rails3?
+        after_initialize :set_current_shard
+      else
         def after_initialize
           set_current_shard()
         end
@@ -96,6 +98,11 @@ module Octopus::Model
     def octopus_establish_connection(spec = nil)
       write_inheritable_attribute(:establish_connection, true)      
       establish_connection(spec)
+    end
+
+    def octopus_set_table_name(value = nil, &block)
+      write_inheritable_attribute(:set_table_name, true)      
+      set_table_name(value, &block)
     end
   end
 end

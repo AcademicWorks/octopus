@@ -1,3 +1,5 @@
+require "set"
+
 class Octopus::Proxy
   attr_accessor :current_model, :current_shard, :current_group, :block, :using_enabled, :last_current_shard, :config
 
@@ -7,8 +9,9 @@ class Octopus::Proxy
   end
 
   def initialize_shards(config)
-    @shards = {}
-    @groups = {}
+    @shards = HashWithIndifferentAccess.new
+    @groups = HashWithIndifferentAccess.new
+    @adapters = Set.new
     @shards[:master] = ActiveRecord::Base.connection_pool()
     @config = ActiveRecord::Base.connection_pool.connection.instance_variable_get(:@config)
     @current_shard = :master
@@ -90,6 +93,10 @@ class Octopus::Proxy
   def shards
     @shards.keys
   end
+
+  def should_clean_table_name?
+    @adapters.size > 1
+  end
   
   def run_queries_on_shard(shard, &block)
     older_shard = self.current_shard
@@ -147,12 +154,17 @@ class Octopus::Proxy
     end
   end
 
+  def respond_to?(method, include_private = false)
+    super || select_connection.respond_to?(method, include_private)
+  end
+
   protected
   def connection_pool_for(adapter, config)
     ActiveRecord::ConnectionAdapters::ConnectionPool.new(ActiveRecord::Base::ConnectionSpecification.new(adapter, config))
   end
 
   def initialize_adapter(adapter)
+    @adapters << adapter
     begin
       require "active_record/connection_adapters/#{adapter}_adapter"
     rescue LoadError
@@ -171,16 +183,19 @@ class Octopus::Proxy
   def send_queries_to_selected_slave(method, *args, &block)        
     old_shard = self.current_shard
     
-    if current_model.read_inheritable_attribute(:replicated) || @fully_replicated
-      self.current_shard = @slaves_list.shift.to_sym
-      @slaves_list << self.current_shard
-    else
-      self.current_shard = :master
-    end
+    begin
+      if current_model.read_inheritable_attribute(:replicated) || @fully_replicated
+        self.current_shard = @slaves_list.shift.to_sym
+        @slaves_list << self.current_shard
+      else
+        self.current_shard = :master
+      end
     
-    sql = select_connection().send(method, *args, &block)     
-    self.current_shard = old_shard
-    @using_enabled = nil
-    return sql    
+      sql = select_connection().send(method, *args, &block)     
+      return sql    
+    ensure
+      self.current_shard = old_shard
+      @using_enabled = nil
+    end
   end
 end
