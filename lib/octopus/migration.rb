@@ -23,4 +23,8 @@ module Octopus::Migration
 
 end
 
-ActiveRecord::Migration.extend(Octopus::Migration)
+if ActiveRecord::VERSION::MAJOR >= 3 && ActiveRecord::VERSION::MINOR >=1
+  ActiveRecord::Migration.send :include, Octopus::Migration
+else
+  ActiveRecord::Migration.extend(Octopus::Migration)
+end
